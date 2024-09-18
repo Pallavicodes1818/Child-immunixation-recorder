@@ -1,25 +1,37 @@
 from django import forms
-from django.contrib import auth
 
-from . import models
+from medical import models as med_models
 
-class UserCreateForm(auth.forms.UserCreationForm):
+class ParentCreationForm(forms.Form):
+    parent_first_name = forms.CharField()
+    parent_last_name = forms.CharField()
+    parent_email = forms.EmailField()
+    locality = forms.ChoiceField(choices=[])
+    helper = forms.ChoiceField(choices=[])
+    child_first_name = forms.CharField()
+    child_last_name = forms.CharField()
+    child_dob = forms.DateField()
 
-    class Meta():
-        fields = ['first_name', 'last_name', 'email', 'username', 'password1', 'password2']
-        model = models.User
+    def __init__(self, user, *args, **kwargs):
+        super(ParentCreationForm, self).__init__(*args, **kwargs)
 
-        def __init__(self, *args, **kwargs):
-            super.__init__(*args, **kwargs)
-            self.fields['username'].label = 'Username'
-            self.fields['first_name'].label = 'First Name'
-            self.fields['last_name'].label = 'Last Name'
-            self.fields['email'].label = 'Email'
+        LOCALITY_CHOICES = [(None,'---Select---')]
+        HELPER_CHOICES = [(None,'---Select---')]
 
-            # self.fields['first_name'].widget.attrs.update({'class' : 'input'})
-            # self.fields['last_name'].widget.attrs.update({'class' : 'input'})
-            # self.fields['username'].widget.attrs.update({'class' : 'input'})
-            # self.fields['email'].widget.attrs.update({'class' : 'input'})
-            # self.fields['password1'].widget.attrs.update({'class' : 'input'})
-            # self.fields['password2'].widget.attrs.update({'class' : 'input'})
-            # self.fields['user_choice'].widget.attrs.update({'class' : 'input'})
+        localities_list = med_models.MedicalAgency.objects.get(user__exact=user.pk).localities.all()
+        for loc in localities_list:
+            LOCALITY_CHOICES.append((loc.pk, loc.__str__()))
+        
+        helper_list = med_models.MedicalAgency.objects.get(user__exact=user.pk).medical_helpers.all()
+        for hp in helper_list:
+            HELPER_CHOICES.append((hp.pk, hp.__str__()))
+
+        self.fields['locality'] = forms.ChoiceField(choices=LOCALITY_CHOICES)
+        self.fields['helper'] = forms.ChoiceField(choices=HELPER_CHOICES)
+
+
+class ChildAdditionForm(forms.Form):
+    parent_username = forms.CharField()
+    child_first_name = forms.CharField()
+    child_last_name = forms.CharField()
+    child_dob = forms.DateField()
